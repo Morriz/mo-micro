@@ -1,5 +1,5 @@
-const {send} = require('micro-core')
-const jwtSession = require('./lib/jwt-session')
+import {send} from 'micro-core'
+import jwtSession from './lib/jwt-session'
 
 module.exports = async function(req, res) {
   console.log('got url: ', req.url)

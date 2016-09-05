@@ -1,4 +1,4 @@
-const {json, send} = require('micro-core')
+import {json, send} from 'micro-core'
 
 // unauthenticated service
 module.exports = async function(req, res) {
