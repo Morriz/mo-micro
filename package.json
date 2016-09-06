@@ -13,6 +13,7 @@
     "request-promise": "^3.0.0"
   },
   "devDependencies": {
+    "async-to-gen": "git+https://github.com/Morriz/async-to-gen.git#master",
     "ava": "git+https://github.com/avajs/ava.git#master",
     "babel-cli": "^6.4.5",
     "babel-core": "^6.4.5",
