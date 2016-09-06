@@ -1,3 +1,5 @@
+import createLogger from './lib/log'
+const log = createLogger('api')
 import {send} from 'micro-core'
 import request from 'request-promise'
 import cookie from 'cookie'
@@ -11,7 +13,7 @@ async function handleAuth (req, res, token, send) {
     send(res, 200, 'showing login screen')
     return
   }
-  console.log('authenticating')
+  log.debug('authenticating')
   if (!token) {
     // do auth first
     token = await request({uri: 'http://localhost:3001', body: qry, json: true})
@@ -24,7 +26,7 @@ async function handleAuth (req, res, token, send) {
     send(res, 200, 'logged out')
     return
   }
-  console.log('got token: ', token)
+  log.debug('got token: ', token)
   res.setHeader('Set-Cookie', cookie.serialize('accessToken', token, {
     httpOnly: true,
     maxAge: 60 * 60 * 24 * 7 // 1 week
@@ -42,14 +44,14 @@ function wrapTimer (name) {
 module.exports = async function(req, res) {
   const startTime = Date.now()
   await expressify(req, res)
-  console.log('expressify took: ', Date.now() - startTime)
+  log.debug('expressify took: ', Date.now() - startTime)
   let token = req.headers['x-access-token'] || req.query.accessToken
   const qry = req.query
   const aggregateRes = {}
   const aggregateReq = {hello: {}, world: {}}
   try {
-    console.log('got url: ', req.url)
-    console.log('got qry: ', qry)
+    log.debug('got url: ', req.url)
+    log.debug('got qry: ', qry)
     // check auth
     if (!token || qry.username || qry.password || req.url === '/login' || req.url === '/logout') {
       const authTime = Date.now()
@@ -74,13 +76,13 @@ module.exports = async function(req, res) {
           json: true
         }).then(wrapTimer('world')),
       ])
-    console.log('got results: ', _res)
     aggregateRes.hello = {res: _res[0], time: timers.hello}
     aggregateRes.world = {res: _res[1], time: timers.world}
     aggregateRes.totalTime = Date.now() - startTime
+    log.debug('sending aggregate results: ', aggregateRes)
     send(res, 200, aggregateRes)
   } catch (e) {
-    console.log('got error: ', e.message)
+    log.debug('got error: ', e.message)
     if (e.statusCode === 401) {
       res.writeHead(301, {Location: '/login'})
       send(res, 301)

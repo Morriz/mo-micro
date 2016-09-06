@@ -5,8 +5,10 @@
   "main": "build/index.js",
   "dependencies": {
     "cookie": "^0.3.1",
+    "debug": "^2.2.0",
     "jwt-redis-session": "^1.0.4",
     "micro-core": "^0.4.0",
+    "moment": "^2.14.1",
     "redis": "^2.6.2",
     "request-promise": "^3.0.0"
   },
@@ -24,6 +26,7 @@
     "babel-preset-stage-0": "^6.3.13",
     "babel-register": "^6.5.2",
     "babel-runtime": "^6.3.19",
+    "concurrently": "^2.2.0",
     "eslint": "^1.7.2",
     "eslint-config-standard": "^4.4.0",
     "eslint-friendly-formatter": "^1.2.2",
@@ -35,11 +38,12 @@
     "test-listen": "^1.0.0"
   },
   "scripts": {
-    "dev": "nodemon --delay 1.5 --exec node -r babel-register -r babel-polyfill node_modules/.bin/micro -- -p 3000 build/index.js",
+    "api": "nodemon --watch src/api.js --exec node -r babel-register -r babel-polyfill node_modules/.bin/micro -p 3000 src/api.js",
+    "auth": "nodemon --watch src/auth.js --exec node -r babel-register -r babel-polyfill node_modules/.bin/micro -p 3001 src/auth.js",
+    "hello": "nodemon --watch src/hello.js --exec node -r babel-register -r babel-polyfill node_modules/.bin/micro -p 3011 src/hello.js",
+    "world": "nodemon --watch src/world.js --exec node -r babel-register -r babel-polyfill node_modules/.bin/micro -p 3012 src/world.js",
+    "all": "concurrent --raw --kill-others \"npm run hello\" \"npm run world\" \"npm run auth\" \"npm run api\"",
     "start": "micro-serve -p 3000 --no-babel .",
-    "auth": "nodemon --delay 1.5 --exec node -r babel-register -r babel-polyfill node_modules/.bin/micro -- -p 3001 build/auth.js",
-    "hello": "nodemon --delay 1.5 --exec node -r babel-register -r babel-polyfill node_modules/.bin/micro -- -p 3011 build/hello.js",
-    "world": "nodemon --delay 1.5 --exec node -r babel-register -r babel-polyfill node_modules/.bin/micro -- -p 3012 build/world.js",
     "build": "rm -rf build > /dev/null && babel src --out-dir build",
     "lint": "eslint . -f node_modules/eslint-friendly-formatter",
     "test": "ava"

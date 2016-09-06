@@ -1,11 +1,13 @@
+import createLogger from './lib/log'
+const log = createLogger('auth')
 import {send} from 'micro-core'
 import jwtSession from './lib/jwt-session'
 
 module.exports = async function(req, res) {
-  console.log('got url: ', req.url)
+  log.debug('got url: ', req.url)
   await jwtSession(req, res)
   const data = req.body
-  console.log('got data: ', data)
+  log.debug('got data: ', data)
   let token
   if (data.username && data.password) {
     req.jwtSession.user = data
@@ -20,9 +22,9 @@ module.exports = async function(req, res) {
         resolve(token)
       })
     })
-    console.log('created token: ', token)
+    log.debug('created token: ', token)
   } else {
-    console.log('logging out user: ', req.jwtSession.user)
+    log.debug('logging out user: ', req.jwtSession.user)
     req.jwtSession.destroy()
     token = null
   }
