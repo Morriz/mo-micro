@@ -1,8 +1,10 @@
 import createLogger from './log'
 const log = createLogger('jwt-session')
+const env = process.env
 const JWTRedisSession = require('jwt-redis-session')
 const redis = require('redis')
-const redisClient = redis.createClient()
+log.debug('using redis host: ', env.REDIS_HOST)
+const redisClient = redis.createClient({host: env.REDIS_HOST || '127.0.0.1'})
 const secret = 'bladida'
 const init = JWTRedisSession({
   client: redisClient,

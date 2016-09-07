@@ -1,0 +1,58 @@
+version: '2'
+services:
+  redis:
+    image: redis
+    ports:
+      - "6379:6379"
+  hello:
+    image: mo-micro
+    restart: always
+    ports:
+      - "3010:3010"
+    environment:
+      - DEBUG=mo-micro:*
+    entrypoint:
+      - node
+      - build/hello.js
+  world:
+    image: mo-micro
+    restart: always
+    ports:
+      - "3011:3011"
+    depends_on:
+      - redis
+    environment:
+      - DEBUG=mo-micro:*
+      - REDIS_HOST=redis
+    entrypoint:
+      - node
+      - build/world.js
+  auth:
+    image: mo-micro
+    restart: always
+    ports:
+      - "3001:3001"
+    depends_on:
+      - redis
+    environment:
+      - DEBUG=mo-micro:*
+      - REDIS_HOST=redis
+    entrypoint:
+      - node
+      - build/auth.js
+  api:
+    image: mo-micro
+    restart: always
+    ports:
+      - "3000:3000"
+    depends_on:
+      - redis
+      - auth
+      - hello
+      - world
+    environment:
+      - DEBUG=mo-micro:*
+      - REDIS_HOST=redis
+      - AUTH_HOST=auth
+      - HELLO_HOST=hello
+      - WORLD_HOST=world

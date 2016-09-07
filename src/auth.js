@@ -9,6 +9,7 @@ module.exports = async function(req, res) {
   log.debug('got data: ', data)
   let token
   if (data.username && data.password) {
+    log.debug('logging in user: ', data)
     req.jwtSession.user = data
     // this will be attached to the JWT
     var claims = {
@@ -25,6 +26,9 @@ module.exports = async function(req, res) {
   } else if (req.jwtSession.id) {
     log.debug('logging out user: ', req.jwtSession.user)
     req.jwtSession.destroy()
+    token = null
+  } else {
+    log.debug('no session found, unsetting token: ', token)
     token = null
   }
   send(res, 200, token)
