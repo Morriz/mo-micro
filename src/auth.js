@@ -1,10 +1,9 @@
 import createLogger from './lib/log'
 const log = createLogger('auth')
-import {send} from 'micro-core'
+import micro, {send} from 'micro-core'
 import jwtSession from './lib/jwt-session'
 
 module.exports = async function(req, res) {
-  log.debug('got url: ', req.url)
   await jwtSession(req, res)
   const data = req.body
   log.debug('got data: ', data)
@@ -13,8 +12,8 @@ module.exports = async function(req, res) {
     req.jwtSession.user = data
     // this will be attached to the JWT
     var claims = {
-      iss: 'my application name',
-      aud: 'myapplication.com',
+      iss: 'your app name',
+      aud: 'yourapp.com',
     }
     token = await new Promise((resolve, reject) => {
       req.jwtSession.create(claims, (err, token) => {
@@ -23,10 +22,17 @@ module.exports = async function(req, res) {
       })
     })
     log.debug('created token: ', token)
-  } else {
+  } else if (req.jwtSession.id) {
     log.debug('logging out user: ', req.jwtSession.user)
     req.jwtSession.destroy()
     token = null
   }
   send(res, 200, token)
 }
+
+if (require.main === module) {
+  const srv = micro(module.exports)
+  srv.listen(3001)
+  log.debug('"auth" listening on port 3001')
+}
+

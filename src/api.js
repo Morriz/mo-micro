@@ -1,29 +1,29 @@
 import createLogger from './lib/log'
-const log = createLogger('api')
-import {send} from 'micro-core'
+import micro, {send} from 'micro-core'
 import request from 'request-promise'
 import cookie from 'cookie'
 import expressify from './lib/expressify'
+const log = createLogger('api')
 
 const timers = {}
 
 async function handleAuth (req, res, token, send) {
   const qry = req.query
-  if (!token && req.url !== '/logout' && !(qry.username && qry.password)) {
-    send(res, 200, 'showing login screen')
+  if (req.url === '/login') {
+    send(res, 200, '<html>showing login screen, <a href="/login?username=x&password=x">LOGIN WITH CREDS</a></html>')
     return
   }
-  log.debug('authenticating')
-  if (!token) {
-    // do auth first
-    token = await request({uri: 'http://localhost:3001', body: qry, json: true})
+  log.debug('calling auth service, awaiting token')
+  if (req.url !== '/logout' || !token) {
+    token = await request({uri: `http://localhost:3001/?accessToken=${token}`, body: qry, json: true})
   }
   if (!token) {
+    log.debug('no token found, probably logged out, unsetting cookie and sending to logout screen')
     res.setHeader('Set-Cookie', cookie.serialize('accessToken', '', {
       httpOnly: true,
-      maxAge: 1
+      expires: new Date()
     }))
-    send(res, 200, 'logged out')
+    send(res, 200, '<html>logged out, <a href="/login">LOGIN</a></html>')
     return
   }
   log.debug('got token: ', token)
@@ -42,20 +42,29 @@ function wrapTimer (name) {
 }
 
 module.exports = async function(req, res) {
+  if (req.url === '/favicon.ico') return
   const startTime = Date.now()
   await expressify(req, res)
-  log.debug('expressify took: ', Date.now() - startTime)
-  let token = req.headers['x-access-token'] || req.query.accessToken
+  let token = req.query.accessToken || req.headers['x-access-token']
+  // allow cookie based:
+  const cookieToken = cookie.parse(req.headers.cookie || '').token
+  if (!(req.query.accessToken || req.headers['x-access-token']) && cookieToken) {
+    // jwtSession does not scan cookies, so overwrite onto header:
+    req.headers['x-access-token'] = cookieToken
+  }
   const qry = req.query
   const aggregateRes = {}
   const aggregateReq = {hello: {}, world: {}}
   try {
+    log.debug('got previous token: ', token)
     log.debug('got url: ', req.url)
     log.debug('got qry: ', qry)
-    // check auth
-    if (!token || qry.username || qry.password || req.url === '/login' || req.url === '/logout') {
+    // if we are the home page, pass, else it must be auth stuff
+    if (req.url !== '/' && (!token || (qry.username && qry.password) || req.url === '/logout')) {
+      // handle auth actions
       const authTime = Date.now()
       token = await handleAuth(req, res, token, send)
+      log.debug('got new token: ', token)
       aggregateRes.authTime = Date.now() - authTime
       if (!token) return
     }
@@ -64,13 +73,13 @@ module.exports = async function(req, res) {
     const _res = await Promise
       .all([
         request({
-          uri: 'http://localhost:3011',
+          uri: 'http://localhost:3010',
           headers: {'x-access-token': token},
           body: aggregateReq.hello,
           json: true
         }).then(wrapTimer('hello')),
         request({
-          uri: 'http://localhost:3012',
+          uri: 'http://localhost:3011',
           headers: {'x-access-token': token},
           body: aggregateReq.world,
           json: true
@@ -90,4 +99,10 @@ module.exports = async function(req, res) {
       throw e
     }
   }
+}
+
+if (require.main === module) {
+  const srv = micro(module.exports)
+  srv.listen(3000)
+  log.debug('"api" listening on port 3000')
 }

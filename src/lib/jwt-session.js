@@ -1,3 +1,5 @@
+import createLogger from './log'
+const log = createLogger('jwt-session')
 const JWTRedisSession = require('jwt-redis-session')
 const redis = require('redis')
 const redisClient = redis.createClient()
@@ -12,12 +14,15 @@ const init = JWTRedisSession({
   requestArg: 'accessToken',
 })
 const expressify = require('./expressify')
-const cookie = require('cookie')
 
 module.exports = async function(req, res) {
   await expressify(req)
-  // allow cookie based:
-  const token = cookie.parse(req.headers.cookie || '').token
-  if (token && !req.headers['x-access-token']) req.headers['x-access-token'] = token
-  return new Promise((resolve, reject) => init(req, res, resolve))
+  return new Promise((resolve, reject) => init(req, res, (sess) => {
+    if (req.jwtSession.id) {
+      log.debug('got session: ', req.jwtSession)
+    } else {
+      log.warn('no session!')
+    }
+    resolve()
+  }))
 }

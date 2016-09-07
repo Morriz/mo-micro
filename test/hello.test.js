@@ -1,4 +1,4 @@
-import serve from 'micro'
+import serve from 'micro-core'
 import test from 'ava'
 import listen from 'test-listen'
 import request from 'request-promise'
